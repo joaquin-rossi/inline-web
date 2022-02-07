@@ -20,7 +20,7 @@ class HTTP:
         if purl.scheme not in ["http", "https"]:
             return None
 
-        if self.options["same_domain"] and purl.netloc != self.base.netloc:
+        if not self.options["allow_cors"] and purl.netloc != self.base.netloc:
             return None
 
         head = requests.head(url)

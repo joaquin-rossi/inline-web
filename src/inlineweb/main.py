@@ -76,18 +76,29 @@ def inline_scripts(soup, http):
         del script.attrs["src"]
 
 
+def remove_scripts(soup):
+    scripts = soup.select("script")
+    for script in scripts:
+        script.decompose()
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("url", type=str)
-    parser.add_argument("-o", dest="output", default="./inline.html")
+    parser.add_argument("-o", "--output", dest="output", default="./inline.html")
+    parser.add_argument("--allow-cors", dest="allow_cors", action="store_true")
+    parser.add_argument("--max-size", dest="max_size")
+    parser.add_argument("--no-script", dest="allow_script", action="store_false")
 
     args = parser.parse_args()
 
     http = None
     try:
-        http = HTTP(args.url)
+        http = HTTP(args.url,
+                    allow_cors=args.allow_cors,
+                    max_size=args.max_size,
+                    )
     except ValueError:
-        print(f"Bad argument: '{args.url}'")
+        print(f"Bad argument: '{args.url}'",)
 
     r = http.get(args.url)
     if r is None:
@@ -106,11 +117,16 @@ def main():
             src = el.attrs["src"]
             el.attrs["src"] = urljoin(args.url, src)
 
+
+    if args.allow_script:
+        inline_scripts(soup, http)
+    else:
+        remove_scripts(soup)
+
     inline_audio(soup, http)
     inline_css(soup, http)
     inline_favicon(soup, http)
     inline_images(soup, http)
-    inline_scripts(soup, http)
 
     with open(args.output, "w+") as f:
         f.write(soup.prettify())
